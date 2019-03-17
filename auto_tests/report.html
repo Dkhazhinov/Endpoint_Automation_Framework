@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Test Report</title>
+    <link href="assets/style.css" rel="stylesheet" type="text/css"/></head>
+  <body onLoad="init()">
+    <script>/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+
+function toArray(iter) {
+    if (iter === null) {
+        return null;
+    }
+    return Array.prototype.slice.call(iter);
+}
+
+function find(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return elem.querySelector(selector);
+}
+
+function find_all(selector, elem) {
+    if (!elem) {
+        elem = document;
+    }
+    return toArray(elem.querySelectorAll(selector));
+}
+
+function sort_column(elem) {
+    toggle_sort_states(elem);
+    var colIndex = toArray(elem.parentNode.childNodes).indexOf(elem);
+    var key;
+    if (elem.classList.contains('numeric')) {
+        key = key_num;
+    } else if (elem.classList.contains('result')) {
+        key = key_result;
+    } else {
+        key = key_alpha;
+    }
+    sort_table(elem, key(colIndex));
+}
+
+function show_all_extras() {
+    find_all('.col-result').forEach(show_extras);
+}
+
+function hide_all_extras() {
+    find_all('.col-result').forEach(hide_extras);
+}
+
+function show_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.remove("collapsed");
+    expandcollapse.classList.remove("expander");
+    expandcollapse.classList.add("collapser");
+}
+
+function hide_extras(colresult_elem) {
+    var extras = colresult_elem.parentNode.nextElementSibling;
+    var expandcollapse = colresult_elem.firstElementChild;
+    extras.classList.add("collapsed");
+    expandcollapse.classList.remove("collapser");
+    expandcollapse.classList.add("expander");
+}
+
+function show_filters() {
+    var filter_items = document.getElementsByClassName('filter');
+    for (var i = 0; i < filter_items.length; i++)
+        filter_items[i].hidden = false;
+}
+
+function add_collapse() {
+    // Add links for show/hide all
+    var resulttable = find('table#results-table');
+    var showhideall = document.createElement("p");
+    showhideall.innerHTML = '<a href="javascript:show_all_extras()">Show all details</a> / ' +
+                            '<a href="javascript:hide_all_extras()">Hide all details</a>';
+    resulttable.parentElement.insertBefore(showhideall, resulttable);
+
+    // Add show/hide link to each result
+    find_all('.col-result').forEach(function(elem) {
+        var collapsed = get_query_parameter('collapsed') || 'Passed';
+        var extras = elem.parentNode.nextElementSibling;
+        var expandcollapse = document.createElement("span");
+        if (collapsed.includes(elem.innerHTML)) {
+            extras.classList.add("collapsed");
+            expandcollapse.classList.add("expander");
+        } else {
+            expandcollapse.classList.add("collapser");
+        }
+        elem.appendChild(expandcollapse);
+
+        elem.addEventListener("click", function(event) {
+            if (event.currentTarget.parentNode.nextElementSibling.classList.contains("collapsed")) {
+                show_extras(event.currentTarget);
+            } else {
+                hide_extras(event.currentTarget);
+            }
+        });
+    })
+}
+
+function get_query_parameter(name) {
+    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function init () {
+    reset_sort_headers();
+
+    add_collapse();
+
+    show_filters();
+
+    toggle_sort_states(find('.initial-sort'));
+
+    find_all('.sortable').forEach(function(elem) {
+        elem.addEventListener("click",
+                              function(event) {
+                                  sort_column(elem);
+                              }, false)
+    });
+
+};
+
+function sort_table(clicked, key_func) {
+    var rows = find_all('.results-table-row');
+    var reversed = !clicked.classList.contains('asc');
+    var sorted_rows = sort(rows, key_func, reversed);
+    /* Whole table is removed here because browsers acts much slower
+     * when appending existing elements.
+     */
+    var thead = document.getElementById("results-table-head");
+    document.getElementById('results-table').remove();
+    var parent = document.createElement("table");
+    parent.id = "results-table";
+    parent.appendChild(thead);
+    sorted_rows.forEach(function(elem) {
+        parent.appendChild(elem);
+    });
+    document.getElementsByTagName("BODY")[0].appendChild(parent);
+}
+
+function sort(items, key_func, reversed) {
+    var sort_array = items.map(function(item, i) {
+        return [key_func(item), i];
+    });
+    var multiplier = reversed ? -1 : 1;
+
+    sort_array.sort(function(a, b) {
+        var key_a = a[0];
+        var key_b = b[0];
+        return multiplier * (key_a >= key_b ? 1 : -1);
+    });
+
+    return sort_array.map(function(item) {
+        var index = item[1];
+        return items[index];
+    });
+}
+
+function key_alpha(col_index) {
+    return function(elem) {
+        return elem.childNodes[1].childNodes[col_index].firstChild.data.toLowerCase();
+    };
+}
+
+function key_num(col_index) {
+    return function(elem) {
+        return parseFloat(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function key_result(col_index) {
+    return function(elem) {
+        var strings = ['Error', 'Failed', 'Rerun', 'XFailed', 'XPassed',
+                       'Skipped', 'Passed'];
+        return strings.indexOf(elem.childNodes[1].childNodes[col_index].firstChild.data);
+    };
+}
+
+function reset_sort_headers() {
+    find_all('.sort-icon').forEach(function(elem) {
+        elem.parentNode.removeChild(elem);
+    });
+    find_all('.sortable').forEach(function(elem) {
+        var icon = document.createElement("div");
+        icon.className = "sort-icon";
+        icon.textContent = "vvv";
+        elem.insertBefore(icon, elem.firstChild);
+        elem.classList.remove("desc", "active");
+        elem.classList.add("asc", "inactive");
+    });
+}
+
+function toggle_sort_states(elem) {
+    //if active, toggle between asc and desc
+    if (elem.classList.contains('active')) {
+        elem.classList.toggle('asc');
+        elem.classList.toggle('desc');
+    }
+
+    //if inactive, reset all other functions and add ascending active
+    if (elem.classList.contains('inactive')) {
+        reset_sort_headers();
+        elem.classList.remove('inactive');
+        elem.classList.add('active');
+    }
+}
+
+function is_all_rows_hidden(value) {
+  return value.hidden == false;
+}
+
+function filter_table(elem) {
+    var outcome_att = "data-test-result";
+    var outcome = elem.getAttribute(outcome_att);
+    class_outcome = outcome + " results-table-row";
+    var outcome_rows = document.getElementsByClassName(class_outcome);
+
+    for(var i = 0; i < outcome_rows.length; i++){
+        outcome_rows[i].hidden = !elem.checked;
+    }
+
+    var rows = find_all('.results-table-row').filter(is_all_rows_hidden);
+    var all_rows_hidden = rows.length == 0 ? true : false;
+    var not_found_message = document.getElementById("not-found-message");
+    not_found_message.hidden = !all_rows_hidden;
+}
+</script>
+    <h1>report.html</h1>
+    <p>Report generated on 17-Mar-2019 at 00:58:05 by <a href="https://pypi.python.org/pypi/pytest-html">pytest-html</a> v1.20.0</p>
+    <h2>Environment</h2>
+    <table id="environment">
+      <tr>
+        <td>Packages</td>
+        <td>{&apos;pytest&apos;: &apos;4.3.0&apos;, &apos;py&apos;: &apos;1.8.0&apos;, &apos;pluggy&apos;: &apos;0.9.0&apos;}</td></tr>
+      <tr>
+        <td>Platform</td>
+        <td>Darwin-18.2.0-x86_64-i386-64bit</td></tr>
+      <tr>
+        <td>Plugins</td>
+        <td>{&apos;xdist&apos;: &apos;1.26.1&apos;, &apos;metadata&apos;: &apos;1.8.0&apos;, &apos;html&apos;: &apos;1.20.0&apos;, &apos;forked&apos;: &apos;1.0.2&apos;}</td></tr>
+      <tr>
+        <td>Python</td>
+        <td>3.6.8</td></tr></table>
+    <h2>Summary</h2>
+    <p>5 tests ran in 18.20 seconds. </p>
+    <p class="filter" hidden="true">(Un)check the boxes to filter the results.</p><input checked="true" class="filter" data-test-result="passed" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="passed">5 passed</span>, <input checked="true" class="filter" data-test-result="skipped" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="skipped">0 skipped</span>, <input checked="true" class="filter" data-test-result="failed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="failed">0 failed</span>, <input checked="true" class="filter" data-test-result="error" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="error">0 errors</span>, <input checked="true" class="filter" data-test-result="xfailed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xfailed">0 expected failures</span>, <input checked="true" class="filter" data-test-result="xpassed" disabled="true" hidden="true" name="filter_checkbox" onChange="filter_table(this)" type="checkbox"/><span class="xpassed">0 unexpected passes</span>
+    <h2>Results</h2>
+    <table id="results-table">
+      <thead id="results-table-head">
+        <tr>
+          <th class="sortable result initial-sort" col="result">Result</th>
+          <th class="sortable" col="name">Test</th>
+          <th class="sortable numeric" col="duration">Duration</th>
+          <th>Links</th></tr>
+        <tr hidden="true" id="not-found-message">
+          <th colspan="4">No results found. Try to check the filters</th></tr></thead>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">auto_tests/test_login_page.py::LoginPageTests::test_verify_that_invalid_email_is_not_accepted</td>
+          <td class="col-duration">3.46</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">auto_tests/test_login_page.py::LoginPageTests::test_unable_to_login_with_wrong_credentials</td>
+          <td class="col-duration">1.83</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">auto_tests/test_login_page.py::LoginPageTests::test_verify_sign_in_button_visible_when_form_not_empty</td>
+          <td class="col-duration">1.02</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">auto_tests/test_login_page.py::LoginPageTests::test_verify_page_elements_presented</td>
+          <td class="col-duration">0.40</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="empty log">No log output captured.</div></td></tr></tbody>
+      <tbody class="passed results-table-row">
+        <tr>
+          <td class="col-result">Passed</td>
+          <td class="col-name">auto_tests/test_login_page.py::LoginPageTests::test_verify_login_with_valid_credentials</td>
+          <td class="col-duration">9.55</td>
+          <td class="col-links"></td></tr>
+        <tr>
+          <td class="extra" colspan="4">
+            <div class="log">----------------------------- Captured stdout call -----------------------------<br/>b&#x27;Delivered-To: auto.test.client19@gmail.com\r\nReceived: by 2002:a17:90a:b409:0:0:0:0 with SMTP id f9-v6csp878030pjr;\r\n        Sun, 17 Mar 2019 00:58:18 -0700 (PDT)\r\nX-Received: by 2002:aed:3562:: with SMTP id b31mr9774014qte.154.1552809498231;\r\n        Sun, 17 Mar 2019 00:58:18 -0700 (PDT)\r\nARC-Seal: i=1; a=rsa-sha256; t=1552809498; cv=none;\r\n        d=google.com; s=arc-20160816;\r\n        b=1GIGjNwNZjCfPBGhkHlplu2wR+mL4QfuHjA2AG1uOq2dvPkQvaqwIYlh+JcIAyOind\r\n         HQAjQ1z+pHfPWPhiLVmN6SB/I9LnwqiJtiJYg6fPGbdf8zo/s7Hg4gG7aUEgiz4XQV2t\r\n         My2W/IampKnuTXu4Ie6Pxy46ScyGwH+Q9pxC2OWoBPsNenK45dWt4DghTHv6/1pwsd06\r\n         66FBXucBVZq6aIALWc/zoDXfwonVF7eX8rCMHWzhj0v7M6fZRSwYFdxJ0HlvdfBJvRuW\r\n         U1wt6udStzKpdCGU8WyH8x08BuQRdpC5svHRt7qgP2Yh3bu7/G5I/gcQaDeNcWpLKkJd\r\n         TLyw==\r\nARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;\r\n        h=to:from:subject:date:message-id:references:mime-version\r\n         :dkim-signature;\r\n        bh=cAQYq1tkWew2XokNLzgNPlj+W+8kisPLA9Jn3+ykPs8=;\r\n        b=plwy2MjCKUCFeu9S6jRWZpP5qdPQMPSSt6PovOkp05j7hXKhlWOWIxC8RQLwxvDC9e\r\n         5WvHt9FZkn9l9AY1cFNMPvBJAt0VVS4cE3D3kZcXToqrzE7uLntl4Q8ZuFUx96eXRg7F\r\n         OrV6qB3yXrPk4hRYPx9Clfw98cVW9DbnaYAJZzamyBfqpyqb+i14zN771g9UF1LVPRim\r\n         Xj8kkM8AmS9EpKmctVgWjDxKtw6fWRpQ518+8SsRaEsdVQqjbH97rGOOjMFMZuu5ZbuG\r\n         KDTqXf3E3cGQXyAuF6qux8bMpZ9XKDalE4w7F5RxB3KpjyRR7mzM9qUMaZJrp36hr/NX\r\n         8/dQ==\r\nARC-Authentication-Results: i=1; mx.google.com;\r\n       dkim=pass header.i=@google.com header.s=20161025 header.b=HT8Y2OCu;\r\n       spf=pass (google.com: domain of 3gf6nxciuadgvywyw022vw1.vwu01x0u132.l9kvbv9bamnrn.picwy.aiiafy.wig@grandcentral.bounces.google.com designates 209.85.220.73 as permitted sender) smtp.mailfrom=3Gf6NXCIUADgvywyw022vw1.vwu01x0u132.L9KvbV9baMnrn.picWY.aiiafY.Wig@grandcentral.bounces.google.com;\r\n       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=google.com\r\nReturn-Path: &lt;3Gf6NXCIUADgvywyw022vw1.vwu01x0u132.L9KvbV9baMnrn.picWY.aiiafY.Wig@grandcentral.bounces.google.com&gt;\r\nReceived: from mail-sor-f73.google.com (mail-sor-f73.google.com. [209.85.220.73])\r\n        by mx.google.com with SMTPS id j9sor7166111qvp.49.2019.03.17.00.58.17\r\n        for &lt;auto.test.client19@gmail.com&gt;\r\n        (Google Transport Security);\r\n        Sun, 17 Mar 2019 00:58:18 -0700 (PDT)\r\nReceived-SPF: pass (google.com: domain of 3gf6nxciuadgvywyw022vw1.vwu01x0u132.l9kvbv9bamnrn.picwy.aiiafy.wig@grandcentral.bounces.google.com designates 209.85.220.73 as permitted sender) client-ip=209.85.220.73;\r\nAuthentication-Results: mx.google.com;\r\n       dkim=pass header.i=@google.com header.s=20161025 header.b=HT8Y2OCu;\r\n       spf=pass (google.com: domain of 3gf6nxciuadgvywyw022vw1.vwu01x0u132.l9kvbv9bamnrn.picwy.aiiafy.wig@grandcentral.bounces.google.com designates 209.85.220.73 as permitted sender) smtp.mailfrom=3Gf6NXCIUADgvywyw022vw1.vwu01x0u132.L9KvbV9baMnrn.picWY.aiiafY.Wig@grandcentral.bounces.google.com;\r\n       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=google.com\r\nDKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=google.com; s=20161025;\r\n        h=mime-version:references:message-id:date:subject:from:to;\r\n        bh=cAQYq1tkWew2XokNLzgNPlj+W+8kisPLA9Jn3+ykPs8=;\r\n        b=HT8Y2OCuu2h1gPOPBnlh4CZwsS4ggNR0TG8ykh9wKXmFyWqY8ZqBWdywrW0EwMQ5Ab\r\n         CkA8ratRwdpTfKwisqOqQCz2/lzfLlxYP4zPZv044l+Ac9Uv8kjJPnUJz5xgUVnZdW/a\r\n         bp/ITcK26TbmXa3eol+JwNdhAW+LBRyz9OJVwRju5bkPp14j2Tfr++AFvy8c0eBLPJrS\r\n         OalQfDC+R/QF6IeOTj1C1ylCS8U/ZGJ2TPhcq44utAn7mKu4/3tPCHZjXIh/Da3Af2qw\r\n         TDpx5tMmn6Epgi+Q0jHkWVEV5o9uccbxHizS7S7VrP9wAhLYpLXs3jWve+2cUDnlfOAq\r\n         BlVw==\r\nX-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=1e100.net; s=20161025;\r\n        h=x-gm-message-state:mime-version:references:message-id:date:subject\r\n         :from:to;\r\n        bh=cAQYq1tkWew2XokNLzgNPlj+W+8kisPLA9Jn3+ykPs8=;\r\n        b=lAyjyd81Y1zUjd3m5cTpFe4eesEkb1K6dWHxXTWhh3QXTPsmSvMjfhLidLxKHZ/Z6K\r\n         NV4z7HZjU2UJS24uhujLlOx8zyHamzwbMjjx8l6gPMe8OxjzDOpuSnQmxgx3Lj7W00BG\r\n         OpxDpHO/fZ604lhngG9hm4f37FRdklAI2OLejxzzwGkp/iBAk617dJZIUWyZn9FJ/wWM\r\n         vEEAFKCK7MUhC0a7xlSraqJ48Uum0+q9thi4e2DVxvTsRV3OCAKhRkEDzj8CVK5eA+uL\r\n         wfK/N4xXhwG43FYDLKvdNujYRU+0u3JzdOaJNp1V3zsTTDUxSDuw/a/YddhjtAsxDUoc\r\n         dPxw==\r\nX-Gm-Message-State: APjAAAW9BJJXBvHLqp8jTK6ZKsNYlBVoWAvUePMmLA1hAswlC5RcfXOi\r\n\t2A9JgOqEzc8MHRLnXs/eQmJfy54hcqLsoQNlLqs=\r\nX-Google-Smtp-Source: APXvYqwxV2GKTRwVE+gUOzmxpvX1NGNVSLuADng9QGHY/aFaWUp5wLKU4Ioe4tyzfnBaNR1qOa88gmo8gGma7Uiy+gQA/+xC8pNQ\r\nMIME-Version: 1.0\r\nX-Received: by 2002:a0c:a94b:: with SMTP id z11mr6183236qva.46.1552809497831;\r\n Sun, 17 Mar 2019 00:58:17 -0700 (PDT)\r\nReferences: &lt;+14242688127.9b945ed28cedde45f6f75100fe461f893cbb3634@txt.voice.google.com&gt;\r\nMessage-ID: &lt;+14242688127.f7a5c6cc9db487010c984dfa84924a2e0a5c1db7@txt.voice.google.com&gt;\r\nDate: Sun, 17 Mar 2019 07:58:17 +0000\r\nSubject: New text message from (206) 736-0798\r\nFrom: &quot;(206) 736-0798&quot; &lt;14242688127.12067360798.RFQ1hbFhgS@txt.voice.google.com&gt;\r\nTo: auto.test.client19@gmail.com\r\nContent-Type: multipart/alternative; boundary=&quot;00000000000085a8b8058445a29e&quot;\r\n\r\n--00000000000085a8b8058445a29e\r\nContent-Type: text/plain; charset=&quot;UTF-8&quot;; format=flowed; delsp=yes\r\n\r\n\r\n&lt;https://voice.google.com&gt;\r\n855899 is your verification code for Endpoint.\r\nYOUR ACCOUNT &lt;https://voice.google.com&gt; HELP CENTER\r\n&lt;https://support.google.com/voice#topic=1707989&gt; HELP FORUM\r\n&lt;https://productforums.google.com/forum/#!forum/voice&gt;\r\nTo edit your email preferences for text messages, go to the email\r\nnotification settings &lt;https://voice.google.com/settings#messaging&gt; in your\r\naccount.\r\nGoogle LLC\r\n1600 Amphitheatre Pkwy\r\nMountain View CA 94043 USA\r\n\r\n--00000000000085a8b8058445a29e\r\nContent-Type: text/html; charset=&quot;UTF-8&quot;\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n&lt;html&gt;&lt;head&gt;&lt;style type=3D&quot;text/css&quot;&gt;\r\n    /* Disable the default font adjustment on iOS devices */\r\n    div, p, a, li, td { -webkit-text-size-adjust:none; }\r\n    /* Adjust the table width on the small screen */\r\n    @media only screen\r\n      and (max-width: 599px) {\r\n      table[class=3D&quot;content-table&quot;] {\r\n        max-width: 360px !important;\r\n      }\r\n    }\r\n    /* Enlarge the font size on mobile device */\r\n    @media only screen\r\n      and (min-device-width: 320px)\r\n      and (max-device-width: 736px) {\r\n      td[class=3D&quot;email-content-header&quot;] {\r\n        font-size: 20px !important;\r\n        line-height: 28px !important;\r\n      }\r\n      td[class=3D&quot;email-content&quot;] {\r\n        font-size: 16px !important;\r\n        line-height: 24px !important;\r\n      }\r\n    }\r\n    /* Avoid the blue links on iOS devices for address, datetime and phone =\r\nnumber */\r\n    .links-date a {\r\n      color: #000000;\r\n      text-decoration: none;\r\n    }\r\n    .links-footer a {\r\n      color: #757575;\r\n      line-height: 12px;\r\n      text-decoration: none;\r\n    }\r\n    .links-phone_number a {\r\n      color: inherit;\r\n      text-decoration: none;\r\n    }\r\n    /* Stop Gmail from thinking this is a quote from an email it has seen b=\r\nefore */\r\n    .im {\r\n      color: #000 !important;\r\n    }\r\n    &lt;/style&gt;&lt;/head&gt;&lt;body&gt;&lt;table cellspacing=3D&quot;0&quot; cellpadding=3D&quot;0&quot; border=\r\n=3D&quot;0&quot; style=3D&quot;font-family: Roboto,\&#x27;Helvetica Neue\&#x27;,Helvetica,Arial,sans-s=\r\nerif;&quot;&gt;&lt;tr&gt;&lt;td&gt;&lt;table cellspacing=3D&quot;0&quot; cellpadding=3D&quot;0&quot; border=3D&quot;0&quot; widt=\r\nh=3D&quot;600&quot; class=3D&quot;content-table&quot; style=3D&quot; border-bottom: 1px solid #EEEEE=\r\nE;&quot;&gt;&lt;tr&gt;&lt;td align=3D&quot;left&quot; style=3D&quot;padding: 16px 32px;&quot;&gt;&lt;a href=3D&quot;https:/=\r\n/voice.google.com&quot; target=3D&quot;_blank&quot;&gt;&lt;img alt=3D&quot;Google Voice&quot; src=3D&quot;https=\r\n://www.gstatic.com/voice-fe/icons/google_voice_lockup_48px.png&quot; height=3D&quot;3=\r\n2&quot;/&gt;&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;table cellspacing=3D&quot;0&quot; cellpadding=3D&quot;0&quot; border=\r\n=3D&quot;0&quot; width=3D&quot;600&quot; class=3D&quot;content-table&quot; style=3D&quot;padding: 25px 32px; b=\r\norder-bottom: 1px solid #EEEEEE;&quot;&gt;&lt;tr&gt;&lt;td style=3D&quot;font-size: 14px; line-he=\r\night: 20px; padding: 25px 0;&quot;&gt;855899 is your verification code for Endpoint=\r\n.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=3D&quot;font-size: 14px; font-style: italic; line-heigh=\r\nt: 20px; color: #757575&quot;&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;table cellspacing=3D&quot;0&quot; cellpad=\r\nding=3D&quot;0&quot; border=3D&quot;0&quot; width=3D&quot;600&quot; class=3D&quot;content-table&quot; style=3D&quot;padd=\r\ning: 25px 32px; font-size: 9px; color: #757575;&quot;&gt;&lt;tr&gt;&lt;td&gt;&lt;table cellspacing=\r\n=3D&quot;0&quot; cellpadding=3D&quot;0&quot; border=3D&quot;0&quot; width=3D&quot;240&quot; style=3D&quot;font-size: 9px=\r\n; line-height: 14px;&quot; class=3D&quot;footer-link&quot;&gt;&lt;tr&gt;&lt;td style=3D&quot;padding-right:=\r\n 5px;&quot;&gt;&lt;a href=3D&quot;https://voice.google.com&quot; target=3D&quot;_blank&quot;&gt;YOUR ACCOUNT&lt;=\r\n/a&gt;&lt;/td&gt;&lt;td style=3D&quot;padding-right: 5px;&quot;&gt;&lt;a href=3D&quot;https://support.google=\r\n.com/voice#topic=3D1707989&quot; target=3D&quot;_blank&quot;&gt;HELP CENTER&lt;/a&gt;&lt;/td&gt;&lt;td&gt;&lt;a hr=\r\nef=3D&quot;https://productforums.google.com/forum/#!forum/voice&quot; target=3D&quot;_blan=\r\nk&quot;&gt;HELP FORUM&lt;/a&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=3D&quot;padding: 15px=\r\n 0&quot;&gt;To edit your email preferences for text messages, go to the &lt;a href=3D&quot;=\r\nhttps://voice.google.com/settings#messaging&quot;&gt;email notification settings&lt;/a=\r\n&gt; in your account.&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;&lt;img alt=3D&quot;Google&quot; src=3D&quot;https://www.=\r\ngstatic.com/images/branding/googlelogo/1x/googlelogo_dark_color_74x24dp.png=\r\n&quot; height=3D&quot;14&quot; style=3D&quot;opacity: .5;&quot;/&gt;&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style=3D&quot;padding:=\r\n 15px 0; line-height: 12px;&quot;&gt;Google LLC&lt;br&gt;&lt;span class=3D&quot;links-footer&quot;&gt;160=\r\n0 Amphitheatre Pkwy&lt;br&gt;Mountain View CA 94043 USA&lt;/span&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;=\r\n/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;\r\n--00000000000085a8b8058445a29e--\r\n&#x27;
+855899 
+</div></td></tr></tbody></table></body></html>
