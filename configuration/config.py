@@ -9,7 +9,7 @@ list_of_all_environments = {
     'Dev': 'None'
 }
 
-users_info_json = open(main.base_directory + '/configuration/users.json')
+users_info_json = open(main.get_base_directory() + '/configuration/users.json')
 users_info = json.load(users_info_json)
 users_info_json.close()
 
