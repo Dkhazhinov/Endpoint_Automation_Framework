@@ -1,0 +1,14 @@
+{
+  "user1": {
+    "email": "auto.test.client19+dk2@gmail.com",
+    "password": "Test_Password199"
+  },
+  "invalid_user": {
+    "email": "fake@gmail.com",
+    "password": "fake_password"
+  },
+  "gmail_user": {
+    "email": "auto.test.client19@gmail.com",
+    "password": "gejfuP-2xozko-tufnyc"
+  }
+}
