@@ -28,7 +28,7 @@ def one_time_setup(request, get_driver):
 def get_driver():
     # This fixture will initialize browser depending on browser selection in User_settings.py and Operating System
     os_platform = sys.platform
-    webdriver_path = main.base_directory + '/webdrivers/'
+    webdriver_path = main.get_base_directory() + '/webdrivers/'
     global driver
     if os_platform == "darwin":  # Mac OS
         if config.browser.upper() == str("chrome").upper():
