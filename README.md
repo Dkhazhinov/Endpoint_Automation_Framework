@@ -59,3 +59,8 @@ PyCharm integrated development environment can be used to execute tests.
 # Test run results
 Interactive Test run results are located in Endpoint_Automation_Framework/auto_tests/ - `login_tests_report.html` file.
 Open in any browser
+
+# Test Execution screen recording and Bug Report Example
+Login Page test suite execution screen recording is available under `Test_Execution_Example_video.mov`
+Bug Report example pdf file is available under `Bug_Report_example_for_Endpoint_Closing.pdf`
+Both files are located in main directory /Endpoint_Automation_Framework
