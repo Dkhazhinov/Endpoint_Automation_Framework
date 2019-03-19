@@ -55,3 +55,7 @@ PyCharm integrated development environment can be used to execute tests.
 * Checkout Endpoint_Automation_Framework from Version Control Git 
 * Use `Python 3.6` Interpreter from Conda Virtual Environment (that was previously created)
 * Choose `Pytest` as a default test runner
+
+# Test run results
+Interactive Test run results are located in Endpoint_Automation_Framework/auto_tests/ - `login_tests_report.html` file.
+Open in any browser
