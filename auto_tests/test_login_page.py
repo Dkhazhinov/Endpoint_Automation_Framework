@@ -10,6 +10,7 @@ _fake = Faker()
 @mark.smoke
 @mark.usefixtures("one_time_setup")
 class LoginPageTests:
+    # This test suite contains 5 tests fro Login Page
 
     def test_verify_that_invalid_email_is_not_accepted(self):
         login_page = LoginPage(self.driver)
