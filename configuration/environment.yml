@@ -18,4 +18,3 @@ dependencies:
     - google-api-python-client
     - oauth2client
     - Faker
-    - imaplib
