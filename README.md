@@ -29,7 +29,7 @@ Mac and Linux: \
 conda info --envs
 conda env list
 ```
-* To install packages:
+* To install packages: \
 `conda install -n {env_name} {package_name}`
 * To search for a package: \
 `conda search {package_name}`
