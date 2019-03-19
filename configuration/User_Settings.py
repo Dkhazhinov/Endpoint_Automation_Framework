@@ -8,6 +8,6 @@ EnvToRunTestsOn = 'Production'
 # EnvToRunTestsOn = 'Dev'
 
 # Select a browser
-# WebDriverBrowser = 'Chrome'
+WebDriverBrowser = 'Chrome'
 # WebDriverBrowser = 'FireFox'
-WebDriverBrowser = 'Safari'
+# WebDriverBrowser = 'Safari'
