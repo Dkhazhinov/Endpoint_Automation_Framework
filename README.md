@@ -1,7 +1,9 @@
 # Endpoint_Automation_Framework
-Page Object Model Automation Framework requires Python 3.6 version and various packages that could be found in 
+Page Object Model Automation Framework requires `Python 3.6` version and various packages that could be found in 
 Endpoint_Automation_Framework/configuration/environment.yml file. To start you can create Conda Virtual Environment 
 using Anaconda/Miniconda.
+
+`Pytest` is used as a test runner and required to be default test runner to execute auto_tests
  
  # Conda Virtual Environment
 Install Anaconda/Miniconda (package, environment management system) and use
@@ -18,10 +20,10 @@ Conda Virtual Environment commands:
 * **Activate/Deactivate** Conda Environment: \
 Windows: \
 `activate {env_name}` \
-`deactivate`
+`deactivate` \
 Mac and Linux: \
 `source activate {env_name}` \
-`source deactivate`
+`source deactivate` 
 * To **Remove** Conda Environment: \
 `conda env remove --name {env_name} --all`
 * List of conda Virtual Environments:
@@ -35,8 +37,21 @@ conda env list
 `conda search {package_name}`
 * To see list of packages in the specific environment: \
 `conda list -n (C:\..\env name)`
-* To use Pip to install packages:
+* To use Pip to install packages: \
+Windows:
 ```
 activate {env_name}
 pip install {package_name}
 ```
+Mac:
+```
+source activate {env_name}
+source pip install {package_name}
+```
+
+# PyCharm
+PyCharm integrated development environment can be used to execute tests. 
+* Download from community edition: https://www.jetbrains.com/pycharm/download 
+* Checkout Endpoint_Automation_Framework from Version Control Git 
+* Use `Python 3.6` Interpreter from Conda Virtual Environment (that was previously created)
+* Choose `Pytest` as a default test runner
