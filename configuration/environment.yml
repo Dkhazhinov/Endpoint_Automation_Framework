@@ -1,0 +1,21 @@
+name: Endpoint_Automation_Framework
+dependencies:
+  - python=3.6
+  - requests
+  - jsonschema
+  - numpy
+  - tabulate
+  - virtualenv
+  - pycrypto
+  - pip:
+    - Selenium
+    - barnum
+    - jira
+    - pytest
+    - pytest-html
+    - pytest-xdist
+    - gspread
+    - google-api-python-client
+    - oauth2client
+    - Faker
+    - imaplib
