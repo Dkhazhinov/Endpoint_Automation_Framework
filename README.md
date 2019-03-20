@@ -1,5 +1,5 @@
 # Endpoint_Automation_Framework
-Automation Framework for https://endpointclosing.com / https://getendpoint.com
+Automation Framework for https://endpointclosing.com / https://getendpoint.com \
 Page Object Model Automation Framework requires `Python 3.6` version and various packages that could be found in 
 Endpoint_Automation_Framework/configuration/environment.yml file. To start you can create Conda Virtual Environment 
 using Anaconda/Miniconda.
